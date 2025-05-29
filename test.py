@@ -32,33 +32,13 @@ def convert_thai_date(date_str):
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
-# สร้างคอลัมน์ใหม่สำหรับแสดงผล
-   # df['OIL DATE'] = df['OIL DATE'].dt.strftime('%d/%m/%Y')
 
-# โชว์ตาราง
 
-# แปลงทุกอย่างใน 'OIL DATE' ให้เป็น string ก่อน
-    #df['OIL DATE'] = df['OIL DATE'].astype(str)
 
-# จากนั้นค่อยทำพวก .str.split() หรือ .str.replace() ต่อได้เลย
-    #split_date = df['OIL DATE'].str.split('/', expand=True)
-    #df['OIL DATE'] = df['OIL DATE'].str.replace('25', '20', n=1)
-    #df['OIL DATE'] = pd.to_datetime(df['OIL DATE'], dayfirst=True, errors='coerce')
     df['OIL DATE'] = df['OIL DATE'].apply(
     lambda x: f"{x.day:02d}/{x.month:02d}/{x.year:04d}" if pd.notnull(x) else "ไม่พบวันที่"
 )  
-    
-    #df['OIL DATE'] = pd.to_datetime(df['OIL DATE'], format='%d/%m/%Y', errors='coerce')
-    #st.dataframe(df[['OIL DATE', 'CH4', 'C2H2', 'C2H4']])
     #df['OIL DATE'] = pd.to_datetime(df['OIL DATE'], errors='coerce')
-    # Convert Thai dates if needed
-    
-    #df['OIL DATE'] = pd.to_datetime(df['OIL DATE'], format='%d/%m/%Y', errors='coerce')
-    #st.dataframe(df[['OIL DATE', 'CH4', 'C2H2', 'C2H4']])
-    #df['OIL DATE'] = pd.to_datetime(df['OIL DATE'], errors='coerce')
-    # Convert Thai dates if needed
-    #st.write(df['OIL DATE'].head(10))
-    #st.write(df['OIL DATE'].dtype)
 
     if df['OIL DATE'].dtype == object  or pd.api.types.is_string_dtype(df['OIL DATE']):
        df['OIL DATE'] = df['OIL DATE'].apply(convert_thai_date)
@@ -67,8 +47,20 @@ if uploaded_file:
     trans_ids = df['Trans ID'].unique()
     selected_id = st.selectbox("Select Transformer ID", trans_ids)
 
-    trans_df = df[df['Trans ID'] == selected_id].sort_values("OIL DATE")
-    latest = trans_df.iloc[-1]
+    available_dates = df[df['Trans ID'] == selected_id]['OIL DATE'].dropna().sort_values().unique()
+    available_dates_str = [d.strftime("%d/%m/%Y") for d in available_dates]
+    selected_date = st.selectbox("Select OIL DATE", available_dates_str)
+    # แปลงกลับเป็น datetime สำหรับกรองข้อมูล
+    selected_datefix = pd.to_datetime(selected_date, format="%d/%m/%Y")
+    filtered_df = df[(df['Trans ID'] == selected_id) & (df['OIL DATE'] == selected_datefix)]
+    if not filtered_df.empty:
+       latest = filtered_df.iloc[-1]
+
+      #--oil_dates = df['OIL DATE'].unique()
+      #--selected_date = st.selectbox("Select OIL DATE", oil_dates)
+      #--oil_df = df[df['OIL DATE'] == selected_date].sort_values("OIL DATE")
+      #--latest = oil_df.iloc[-1]
+      
                                                                        
     # ------------- Layout -------------
     col1, col2, col3, col4 = st.columns(4)
@@ -89,65 +81,16 @@ if uploaded_file:
         st.write(f"**Location:** Thanon Tok")
         st.write(f"**Oil Date:** {latest['OIL DATE'].strftime('%d/%m/%Y') if pd.notnull(latest['OIL DATE']) else 'N/A'}")
 
-    # Section: DGA Trend
-    #trans_df = trans_df.copy()
-#trans_df['OIL DATE'] = pd.to_datetime(trans_df['OIL DATE'], errors='coerce')
-
-    #for col in ['CH4', 'C2H2', 'C2H4']:
-        #trans_df[col] = pd.to_numeric(trans_df[col], errors='coerce')
-
-    #trans_df = trans_df.sort_values("OIL DATE")
-#trans_df['OIL DATE'] = pd.to_datetime(trans_df['OIL DATE'], errors='coerce')
-    #for gas in ['CH4', 'C2H2', 'C2H4']:
-         #trans_df[gas] = pd.to_numeric(trans_df[gas], errors='coerce')
-    #trans_df = trans_df.dropna(subset=['OIL DATE', 'CH4', 'C2H2', 'C2H4'])
-    #trans_df = trans_df.sort_values('OIL DATE')
-# Preview data
-    #st.markdown("### 🔎 Debug Info")
-    #st.write("Trans ID count:\n", df['Trans ID'].value_counts())
-    #st.write("Original rows:", len(df))
-     
-
-# แสดงจำนวนแถวก่อน filter
-    #st.write(f"Rows for ID {selected_id}: {len(df[df['Trans ID'] == selected_id])}")
-    #st.write(df[['OIL DATE', 'Age', 'Max Load', 'Oil Quality']])
-    #st.write("Data types:", trans_df.dtypes)
-    #st.write(f"Rows in trans_df: {len(trans_df)}")
-# สมมติคุณมี DataFrame ชื่อ df
-#df['OIL DATE'] = pd.to_datetime(df['OIL DATE'], format="%d/%m/%Y")  # หรือ %Y-%m-%d ตามรูปแบบที่คุณมี
-
-# สร้างกราฟ
-    #plt.figure(figsize=(10, 5))
-    #plt.plot(df['OIL DATE'], marker='o')  # value คือข้อมูล y
-
-# ตั้งค่ารูปแบบวันที่บนแกน x
-    #plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y'))
-    #plt.gcf().autofmt_xdate()  # ให้วันที่เอียงเล็กน้อยเพื่ออ่านง่าย
-    #plt.xlabel('OIL DATE')
-    #plt.grid(True)
-    #plt.show()
-
     df['OIL DATE'] = pd.to_datetime(df['OIL DATE'])
     df_grouped = df.drop_duplicates(subset=['CH4','C2H2','C2H4', 'OIL DATE']).sort_values('OIL DATE')
-    # แปลงคอลัมน์วันที่ให้เป็น datetime ก่อน
-#-df['OIL DATE'] = pd.to_datetime(df['OIL DATE'], dayfirst=True)
     
     x_labels = df_grouped['OIL DATE'].dt.strftime('%d/%m/%Y') 
     x_pos = list(range(len(df_grouped)) )
-# ให้แน่ใจว่า OIL_DATE เป็น datetime
-    #df['OIL DATE'] = pd.to_datetime(df['OIL DATE'])
+
     grouped = (
     df.sort_values('OIL DATE')
     .drop_duplicates(subset=['OIL DATE'])
 )
-# ตัดเวลาออก เหลือแค่วันที่
-    #df['OIL DATE'] = df['OIL DATE'].dt.floor('D')
-#-df['OIL DATE'] = df['OIL DATE'].dt.date
-# รวมข้อมูลวันเดียวกันโดยใช้ค่าเฉลี่ย
-#-df_grouped = df.groupby('OIL DATE').mean(numeric_only=True).reset_index()
-
-# แปลงกลับเป็น datetime เพื่อ plot
-#-df_grouped['OIL DATE'] = pd.to_datetime(df_grouped['OIL DATE'])
     
     st.markdown("### 📈 DGA Trend")
        # สร้างกราฟ Plotly
@@ -717,12 +660,6 @@ if uploaded_file:
         
         # ... (duval_1 and ieee_key functions as they are, assuming they return score, {} or score, weight_adjust_dict) ...
         def duval_1(row):
-            # ... (ensure this function's 'else' or failure cases also return a
-            # consistent adjustment dictionary if they are to modify weights, e.g.,
-            # failed_duval_adjustment = {'duval_score': 0, ... other weights 1/6 ...}
-            # For now, assuming it returns {} or a specific adjustment as per your original logic)
-            # Based on your code, if it hits 'else', it returns an adjustment that sets duval_score's weight to 0.
-            # This pattern should be consistent.
             total = row['ch4'] + row['c2h2'] + row['c2h4']
             if total == 0: # If all Duval gases are zero, normal condition
                 return 1.0, {} # Return a perfect score (1.0) and no weight adjustment
@@ -747,8 +684,6 @@ if uploaded_file:
                 return 0, weights_adj # Score 0 for Duval, and adjust weights
 
         def ieee_key(row):
-            # ... (similar consistency check for its failure case and weight adjustment) ...
-            # Your current ieee_key returns an adjustment that sets ieee_score's weight to 0 if gases are missing.
             gases = {
                 'h2': row.get('h2', 0), 'ch4': row.get('ch4', 0),
                 'c2h2': row.get('c2h2', 0), 'c2h4': row.get('c2h4', 0),
