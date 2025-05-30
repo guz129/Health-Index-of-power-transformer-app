@@ -774,7 +774,7 @@ if uploaded_file:
     .drop_duplicates(subset=['trans_id', 'oil_date'])
 )
 
-    st.markdown("### 💊  Health Treand")
+    st.markdown("### 💊  Health Trend")
     fig, ax = plt.subplots(figsize=(10, 5))
     x_pos = range(len(unique_health_df))
     ax.bar(x_pos, unique_health_df['health_index'], color='red')
