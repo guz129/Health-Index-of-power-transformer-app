@@ -400,11 +400,18 @@ if uploaded_file:
                 ch4_pct = 100 * row['ch4'] / total
                 c2h2_pct = 100 * row['c2h2'] / total
                 c2h4_pct = 100 * row['c2h4'] / total
+                
+                 # ดึง Trans ID ถ้ามีหลายชื่อให้เช็ค
+                trans_id = row.get('trans_id') or f'Transformer{i+1:02d}'
+                oil_date = row.get('oil_date') if 'oil_date' in row else None
+
                 triangle_data.append({
                     'CH₄': ch4_pct,
                     'C₂H₂': c2h2_pct,
                     'C₂H₄': c2h4_pct,
-                    'Trans ID TX': df.loc[i, 'Trans ID TX'] if 'Trans ID' in df.columns else f'Trans ID TX{i+1:02d}'
+                    'Transformer ID': trans_id,
+                    #'Trans ID TX': df.loc[i, 'Trans ID TX'] if 'Trans ID' in df.columns else f'Trans ID TX{i+1:02d}',
+                    'OIL DATE': oil_date.strftime('%d/%m/%Y') if pd.notnull(oil_date) else "N/A"
                 })
 
         triangle_df = pd.DataFrame(triangle_data)
@@ -420,7 +427,8 @@ if uploaded_file:
             #a='C₂H₂',
             #b='C₂H₄',
             #c='CH₄',
-            color='Trans ID TX',
+            color='Transformer ID',
+            hover_name='OIL DATE',
             size_max=10
             
         )
@@ -749,8 +757,18 @@ if uploaded_file:
     df['health_index'] = df.apply(calc_health_index, axis=1)
     df['oil_date'] = pd.to_datetime(df['oil_date'])
     unique_health_df = df.drop_duplicates(subset=['health_index', 'oil_date']).sort_values('oil_date')
-   
-    x_labels = unique_health_df['trans_id'].tolist()
+    # ตรวจจำนวนหม้อแปลง
+    unique_trans_ids = unique_health_df['trans_id'].nunique()
+
+    if unique_trans_ids == 1:
+    # ถ้ามีแค่เครื่องเดียว ให้โชว์ Trans ID + OIL DATE
+       x_labels = [
+        f"{row['trans_id']}\n{row['oil_date'].strftime('%d/%m/%Y')}" 
+        for _, row in unique_health_df.iterrows()
+    ]
+    else:
+       x_labels = unique_health_df['trans_id'].tolist()
+
     grouped = (
     df.sort_values('oil_date')
     .drop_duplicates(subset=['trans_id', 'oil_date'])
